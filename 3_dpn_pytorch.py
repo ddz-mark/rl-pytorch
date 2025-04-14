@@ -131,7 +131,7 @@ class DQN(object):
 # ---------------------------------------------------------
 # Hyper Parameters
 ENV_NAME = 'CartPole-v0'
-EPISODE = 10  # Episode limitation
+EPISODE = 1  # Episode limitation
 STEP = 300  # Step limitation in an episode
 TEST = 10  # The number of experiment test every 100 episode
 
@@ -145,6 +145,9 @@ def main():
     for episode in range(EPISODE):
         # initialize task
         state = env.reset()[0]
+        # 四维向量：小车位置（水平坐标）、小车速度（水平方向）、杆子角度（偏离垂直方向）、	杆子角速度（变化率）
+        # 动作集合：左移、右移
+        # 奖励：每移动一次+1，最大奖励200，一旦触发终止条件（杆子倒下或小车出界），Episode 结束，不再获得奖励
         print("state:", state)
         # Train
         for step in range(STEP):

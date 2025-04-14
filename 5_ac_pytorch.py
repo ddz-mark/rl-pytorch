@@ -4,11 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from torch.distributions import Categorical
 import gym
-from itertools import count
-import matplotlib.pyplot as plt
-
-# env = gym.make("LunarLander-v2")
-env = gym.make('CartPole-v0')
+import time
 
 
 class Actor(nn.Module):
@@ -63,7 +59,7 @@ class AC:
 
         self.loss = nn.MSELoss()
 
-    def get_action(self, s):
+    def choose_action(self, s):
         a = self.actor(s)
         dist = Categorical(a)
         action = dist.sample()
@@ -92,22 +88,55 @@ class AC:
         self.actor_optim.step()
 
 
-if __name__ == "__main__":
-    model = AC(env)
-    reward = []
-    MAX_EPISODE = 500
-    for episode in range(MAX_EPISODE):
-        s = env.reset()
-        done = False
-        ep_r = 0
-        while not done:
-            # env.render()
-            a, log_prob = model.get_action(s)
-            s_, rew, done, _ = env.step(a)
-            ep_r += rew
-            model.learn(log_prob, s, s_, rew)
-            s = s_
-        reward.append(ep_r)
-        print(f"episode:{episode} ep_r:{ep_r}")
-    plt.plot(reward)
-    plt.show()
+# ---------------------------------------------------------
+# Hyper Parameters
+ENV_NAME = 'CartPole-v0'
+EPISODE = 10  # Episode limitation
+STEP = 300  # Step limitation in an episode
+TEST = 10  # The number of experiment test every 100 episode
+
+
+def main():
+    # initialize OpenAI Gym env and dqn agent
+    env = gym.make(ENV_NAME)
+    agent = AC(env)
+
+    for episode in range(EPISODE):
+        # initialize task
+        # 四维向量：小车位置（水平坐标）、小车速度（水平方向）、杆子角度（偏离垂直方向）、	杆子角速度（变化率）
+        # 动作集合：左移、右移
+        # 奖励：每移动一次+1，最大奖励200，一旦触发终止条件（杆子倒下或小车出界），Episode 结束，不再获得奖励
+        state = env.reset()[0]
+        print("state", state)
+        # Train
+        # 只采一盘？N个完整序列
+        for step in range(STEP):
+            action, log_prob = agent.choose_action(state)  # softmax概率选择action
+            next_state, reward, done, _, _ = env.step(action)
+            print(state, action, log_prob, reward)
+            agent.learn(log_prob, state, next_state, reward)
+            state = next_state
+            if done:
+                break
+
+        # Test every 100 episodes
+        if episode % 100 == 0:
+            total_reward = 0
+            for i in range(TEST):
+                state = env.reset()[0]
+                for j in range(STEP):
+                    env.render()
+                    action, log_prob = agent.choose_action(state)  # direct action for test
+                    state, reward, done, _, _ = env.step(action)
+                    total_reward += reward
+                    if done:
+                        break
+            ave_reward = total_reward / TEST
+            print('episode: ', episode, 'Evaluation Average Reward:', ave_reward)
+
+
+if __name__ == '__main__':
+    time_start = time.time()
+    main()
+    time_end = time.time()
+    print('The total time is ', time_end - time_start)

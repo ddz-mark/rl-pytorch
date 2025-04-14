@@ -97,6 +97,7 @@ class PG(object):
         # Step 2: 前向传播
         softmax_input = self.network.forward(torch.FloatTensor(self.ep_obs).to(device))
         # all_act_prob = F.softmax(softmax_input, dim=0).detach().numpy()
+        # cross_entropy自带softmax
         neg_log_prob = F.cross_entropy(input=softmax_input, target=torch.LongTensor(self.ep_as).to(device),
                                        reduction='none')
 
@@ -113,7 +114,7 @@ class PG(object):
 # ---------------------------------------------------------
 # Hyper Parameters
 ENV_NAME = 'CartPole-v0'
-EPISODE = 3000  # Episode limitation
+EPISODE = 10  # Episode limitation
 STEP = 300  # Step limitation in an episode
 TEST = 10  # The number of experiment test every 100 episode
 
@@ -125,12 +126,17 @@ def main():
 
     for episode in range(EPISODE):
         # initialize task
+        # 四维向量：小车位置（水平坐标）、小车速度（水平方向）、杆子角度（偏离垂直方向）、	杆子角速度（变化率）
+        # 动作集合：左移、右移
+        # 奖励：每移动一次+1，最大奖励200，一旦触发终止条件（杆子倒下或小车出界），Episode 结束，不再获得奖励
         state = env.reset()[0]
+        print("state", state)
         # Train
         # 只采一盘？N个完整序列
         for step in range(STEP):
             action = agent.choose_action(state)  # softmax概率选择action
             next_state, reward, done, _, _ = env.step(action)
+            print(state, action, reward)
             agent.store_transition(state, action, reward)  # 新函数 存取这个transition
             state = next_state
             if done:
@@ -159,4 +165,3 @@ if __name__ == '__main__':
     main()
     time_end = time.time()
     print('The total time is ', time_end - time_start)
-
