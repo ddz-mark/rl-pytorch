@@ -71,16 +71,15 @@ class AC:
         v = self.critic(s)
         v_ = self.critic(s_)
 
+        # critic网络优化：使用td求均方误差
         critic_loss = self.loss(self.gamma * v_ + rew, v)
         # print(f"critic_loss:{critic_loss}")
         self.critic_optim.zero_grad()
         critic_loss.backward()
         self.critic_optim.step()
 
-        # v = self.critic(s)
-        # v_ = self.critic(s_)
+        # actor网络优化：奖励为td，log_{p(a|s)}为交叉熵
         td = self.gamma * v_ + rew - v
-
         loss_actor = -log_prob * td.detach()
         # print(f"loss_actor:{loss_actor}")
         self.actor_optim.zero_grad()
@@ -114,6 +113,7 @@ def main():
             action, log_prob = agent.choose_action(state)  # softmax概率选择action
             next_state, reward, done, _, _ = env.step(action)
             print(state, action, log_prob, reward)
+            # 与PG区别：使用TD时序差分思想，可每次都训练，不用等到done
             agent.learn(log_prob, state, next_state, reward)
             state = next_state
             if done:
