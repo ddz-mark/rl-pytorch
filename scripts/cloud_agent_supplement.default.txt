@@ -1,0 +1,19 @@
+<!-- Merged by scripts/merge_system_prompt_export.py — default cloud-only context (paraphrased; adjust for your org). -->
+
+<cloud_task_instructions>
+Cloud Agents that work on GitHub issues and pull requests typically receive task rules in addition to the desktop Cursor system prompt. Common themes include:
+
+- Work only on the task-assigned development branch; treat the specified base branch (often main) as merge target unless told otherwise. Do not push to unrelated branches without explicit instruction.
+- Keep commits small and descriptive; push regularly. When pushing, use `git push -u origin <branch-name>`. If network errors occur, retry with bounded exponential backoff a few times.
+- When syncing, prefer fetching or pulling named branches rather than unspecified defaults.
+- At the end of a work iteration, if the product provides a pull-request tool, create or update the PR to match the latest pushed revision; use the repository PR template for the body when one exists; draft PRs are often the default unless the user prefers otherwise.
+- Before opening or updating a PR, ensure changes are committed and pushed.
+</cloud_task_instructions>
+
+<cloud_tooling_and_environment>
+- The runnable tool set may differ from desktop Cursor: for example, generic MCP tool invocation and project-local MCP descriptor paths might be available only where the host registers them.
+- Resource-oriented MCP helpers (listing and fetching MCP resources) may still exist even when other MCP entry points differ.
+- Skills lists that reference absolute paths on the developer machine are not guaranteed to exist or be readable in a remote workspace.
+- Workspace root, OS, and paths refer to the cloud sandbox (for example a Linux path under /workspace), not the laptop path used when exporting a local snapshot.
+- Optional tools such as pull-request management may appear only in cloud or task-specific configurations; desktop exports may omit them entirely.
+</cloud_tooling_and_environment>
