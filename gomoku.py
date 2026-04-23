@@ -9,8 +9,6 @@
 
 import tkinter as tk
 from tkinter import messagebox
-import random
-import math
 
 # ──────────────────────────────────────────────
 # 游戏配置
@@ -229,7 +227,8 @@ class GomokuApp:
         for text, val in [("黑", "black"), ("白", "white")]:
             tk.Radiobutton(ai_frame, text=text, variable=self.ai_side, value=val,
                            bg="#3C2A1E", fg="#DEB887", selectcolor="#5C3317",
-                           activebackground="#3C2A1E").pack(side=tk.LEFT, padx=3)
+                           activebackground="#3C2A1E",
+                           command=self._on_ai_side_change).pack(side=tk.LEFT, padx=3)
 
         # 按钮
         btn_cfg = dict(bg="#5C3317", fg="#FFD700", font=("Helvetica", 10, "bold"),
@@ -341,6 +340,10 @@ class GomokuApp:
             return True
         return self.current_player != self._ai_player()
 
+    def _on_ai_side_change(self):
+        if self.mode.get() == "pvc":
+            self._new_game()
+
     def _on_hover(self, event):
         row, col = self._pixel_to_cell(event.x, event.y)
         if self.board.in_bounds(row, col):
@@ -370,7 +373,7 @@ class GomokuApp:
         if self.board.check_win(row, col, self.current_player):
             winner = "黑棋" if self.current_player == BLACK else "白棋"
             self.game_over = True
-            self.status_var.set(f"🎉 {winner} 获胜！")
+            self.status_var.set(f"{winner} 获胜！")
             messagebox.showinfo("游戏结束", f"{winner} 获胜！")
             return
 
@@ -395,23 +398,24 @@ class GomokuApp:
             self._do_place(*pos)
 
     def _undo(self):
-        if self.game_over:
+        if not self.board.history:
             return
-        # 人机模式下撤销两步（AI的也一起撤）
+
+        # 人机模式下撤销两步（AI 的也一起撤），且支持终局后悔棋。
+        self.game_over = False
         steps = 2 if self.mode.get() == "pvc" else 1
         for _ in range(steps):
             result = self.board.undo()
             if result is None:
                 break
+
         if self.board.history:
             self.last_pos = (self.board.history[-1][0], self.board.history[-1][1])
         else:
             self.last_pos = None
-        # 撤棋后回到人类走棋
-        if self.mode.get() == "pvc":
-            self.current_player = (WHITE if self._ai_player() == BLACK else BLACK)
-        else:
-            self.current_player = BLACK if self.current_player == WHITE else WHITE
+
+        # 按棋谱长度恢复当前执子：黑先，偶数步轮到黑，奇数步轮到白。
+        self.current_player = BLACK if len(self.board.history) % 2 == 0 else WHITE
         self._update_status()
         self._draw_board()
 
