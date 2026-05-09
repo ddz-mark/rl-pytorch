@@ -1,44 +1,49 @@
 #!/usr/bin/env python3
-"""Terminal Gomoku mini game."""
+"""Terminal Gomoku (Five in a Row) mini game.
+
+Run:
+    python gomoku.py
+"""
 
 from __future__ import annotations
 
 BOARD_SIZE = 15
 EMPTY = "."
-PLAYERS = ("X", "O")
+PLAYER_X = "X"
+PLAYER_O = "O"
 
 
-def create_board(size: int = BOARD_SIZE) -> list[list[str]]:
+def create_board(size: int) -> list[list[str]]:
     return [[EMPTY for _ in range(size)] for _ in range(size)]
 
 
-def render_board(board: list[list[str]]) -> None:
+def print_board(board: list[list[str]]) -> None:
     size = len(board)
-    header = "   " + " ".join(f"{i:2d}" for i in range(size))
-    print(header)
-    for r, row in enumerate(board):
-        print(f"{r:2d} " + " ".join(f" {cell}" for cell in row))
+    header = "   " + " ".join(f"{c:2d}" for c in range(size))
+    print("\n" + header)
+    for r in range(size):
+        row = " ".join(f" {cell}" for cell in board[r])
+        print(f"{r:2d} {row}")
+    print()
 
 
 def parse_move(raw: str, size: int) -> tuple[int, int] | None:
-    text = raw.strip().lower()
-    if text in {"q", "quit", "exit"}:
-        return None
-
-    parts = raw.replace(",", " ").split()
+    raw = raw.strip().replace(",", " ")
+    parts = [p for p in raw.split() if p]
     if len(parts) != 2:
-        raise ValueError("请输入两个坐标，例如: 7 7")
+        return None
+    try:
+        r, c = int(parts[0]), int(parts[1])
+    except ValueError:
+        return None
+    if 0 <= r < size and 0 <= c < size:
+        return r, c
+    return None
 
-    row, col = int(parts[0]), int(parts[1])
-    if not (0 <= row < size and 0 <= col < size):
-        raise ValueError(f"坐标必须在 0 到 {size - 1} 之间")
 
-    return row, col
-
-
-def has_five(board: list[list[str]], row: int, col: int, player: str) -> bool:
-    size = len(board)
+def is_winner(board: list[list[str]], row: int, col: int, player: str) -> bool:
     directions = ((1, 0), (0, 1), (1, 1), (1, -1))
+    size = len(board)
 
     for dr, dc in directions:
         count = 1
@@ -61,53 +66,53 @@ def has_five(board: list[list[str]], row: int, col: int, player: str) -> bool:
     return False
 
 
-def is_board_full(board: list[list[str]]) -> bool:
+def is_full(board: list[list[str]]) -> bool:
     return all(cell != EMPTY for row in board for cell in row)
 
 
-def run_game() -> None:
-    board = create_board()
-    current = 0
+def play() -> None:
+    board = create_board(BOARD_SIZE)
+    current = PLAYER_X
 
-    print("欢迎来到五子棋小游戏!")
+    print("欢迎来到五子棋小游戏！")
     print("输入格式: 行 列 (例如: 7 7)，输入 q 退出。")
 
     while True:
-        render_board(board)
-        player = PLAYERS[current]
+        print_board(board)
+        move_raw = input(f"玩家 {current} 落子 > ").strip()
 
-        try:
-            raw = input(f"玩家 {player} 落子> ")
-            move = parse_move(raw, len(board))
-            if move is None:
-                print("游戏已退出。")
-                return
-
-            row, col = move
-            if board[row][col] != EMPTY:
-                print("该位置已有棋子，请重试。")
-                continue
-
-            board[row][col] = player
-
-            if has_five(board, row, col, player):
-                render_board(board)
-                print(f"玩家 {player} 获胜! 🎉")
-                return
-
-            if is_board_full(board):
-                render_board(board)
-                print("棋盘已满，平局。")
-                return
-
-            current = 1 - current
-
-        except ValueError as err:
-            print(f"输入错误: {err}")
-        except KeyboardInterrupt:
-            print("\n游戏已中断。")
+        if move_raw.lower() in {"q", "quit", "exit"}:
+            print("游戏已退出。")
             return
+
+        move = parse_move(move_raw, BOARD_SIZE)
+        if move is None:
+            print("输入无效，请输入两个合法整数坐标，例如: 7 7")
+            continue
+
+        row, col = move
+        if board[row][col] != EMPTY:
+            print("该位置已有棋子，请重新选择。")
+            continue
+
+        board[row][col] = current
+
+        if is_winner(board, row, col, current):
+            print_board(board)
+            print(f"玩家 {current} 获胜！")
+            return
+
+        if is_full(board):
+            print_board(board)
+            print("平局，棋盘已满。")
+            return
+
+        current = PLAYER_O if current == PLAYER_X else PLAYER_X
+
+
+def main() -> None:
+    play()
 
 
 if __name__ == "__main__":
-    run_game()
+    main()
